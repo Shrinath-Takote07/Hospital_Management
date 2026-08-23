@@ -206,9 +206,9 @@ To explore the system's capabilities, use these pre-configured accounts:
 **Rajeev Nayan**  
 Full-Stack Java Developer | Spring Boot Expert | Clean Code Enthusiast
 
-📧 Email: imrajeevnayan@gmail.com  
-💼 LinkedIn: https://www.linkedin.com/in/imrajeevnayan  
-🐙 GitHub: github.com/imrajeevnayan
+📧 Email: shrinathtakote163@gmail.com 
+💼 LinkedIn: https://www.linkedin.com/in/shrinath-takote-322664318/  
+🐙 GitHub: https://github.com/Shrinath-Takote07
 
 ---
 
@@ -217,7 +217,7 @@ Full-Stack Java Developer | Spring Boot Expert | Clean Code Enthusiast
 If you encounter any issues or have questions about the project:
 
 1. Check the [GitHub Issues](https://github.com/yourname/hms/issues) page for known problems
-2. Contact me directly at imrajeevnayan@gmail.com
+2. Contact me directly at shrinathtakote163@gmail.com
 3. Explore the interactive API documentation at http://localhost:8080/swagger-ui.html (after running the application)
 
 ---
