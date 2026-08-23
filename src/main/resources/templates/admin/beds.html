@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bed Allocation Management - HMS Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<!-- Navbar -->
+<nav class="bg-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-bed text-2xl text-teal-600"></i>
+                <h1 class="text-2xl font-bold text-indigo-700">HMS Admin Panel</h1>
+            </div>
+            <div class="flex items-center gap-6">
+                <a href="/admin/users" class="text-gray-700 hover:text-indigo-600 font-medium">Users</a>
+                <a href="/admin/appointments" class="text-gray-700 hover:text-indigo-600 font-medium">Appointments</a>
+                <a href="/admin/beds" class="text-indigo-600 font-semibold border-b-2 border-indigo-600 pb-1">Bed Allocations</a>
+                <form th:action="@{/logout}" method="post" class="inline">
+                    <button class="text-red-600 hover:text-red-800 font-medium flex items-center gap-2">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- Header Row -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-3">
+                <i class="fas fa-procedures text-teal-600"></i> Bed & Room Allocation System
+            </h2>
+            <p class="text-gray-500 mt-1 text-sm">Manage hospital beds (ICU, GENERAL, EMERGENCY), daily fees in ₹, and patient ward assignments</p>
+        </div>
+        <a href="/admin/dashboard"
+           class="inline-flex items-center gap-2 bg-indigo-600 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition shadow">
+            <i class="fas fa-arrow-left text-sm"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Flash Message -->
+    <div th:if="${msg}" class="bg-green-100 border border-green-300 text-green-700 px-5 py-4 rounded-xl mb-6 flex items-center gap-3">
+        <i class="fas fa-check-circle text-green-500 text-lg"></i>
+        <span th:text="${msg}"></span>
+    </div>
+
+    <!-- Create Bed Card -->
+    <div class="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-gray-100">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-plus-circle text-teal-600"></i> Add New Hospital Bed / Ward Unit
+        </h3>
+        <form th:action="@{/admin/beds/create}" method="post" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Bed Category / Type *</label>
+                <select name="bedType" required class="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-teal-500 text-sm bg-white font-semibold text-gray-700">
+                    <option value="ICU">🏥 ICU (Intensive Care)</option>
+                    <option value="GENERAL">🛌 GENERAL WARD</option>
+                    <option value="EMERGENCY">🚨 EMERGENCY</option>
+                    <option value="PRIVATE_WARD">🏬 PRIVATE WARD</option>
+                    <option value="PEDIATRIC_ICU">👶 PEDIATRIC ICU</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Room No. *</label>
+                <input type="text" name="roomNo" required placeholder="e.g. Room-102" class="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-teal-500 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Bed No. *</label>
+                <input type="text" name="bedNo" required placeholder="e.g. BED-05" class="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-teal-500 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Daily Fee (in ₹ INR) *</label>
+                <input type="number" step="0.01" name="dailyFee" required placeholder="2500.00" class="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-teal-500 text-sm font-semibold text-emerald-700">
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-4 rounded-xl transition shadow flex items-center justify-center gap-2 text-sm">
+                    <i class="fas fa-save"></i> Add Bed
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bed Allocation List & Search Bar -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+        
+        <!-- Table Control Bar with Search Bar -->
+        <div class="bg-gradient-to-r from-teal-700 to-indigo-700 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-bed text-white text-xl"></i>
+                <h3 class="text-white font-bold text-lg">Hospital Bed Inventory & Allocations</h3>
+            </div>
+            
+            <!-- Realtime Name Search Bar -->
+            <div class="relative w-full sm:w-80">
+                <i class="fas fa-search absolute left-3.5 top-3 text-gray-400 text-sm"></i>
+                <input type="text" id="bedSearchInput" onkeyup="filterBedTable()" placeholder="Search patient name, bed or room no..."
+                       class="w-full pl-10 pr-4 py-2 text-xs rounded-xl border-0 focus:ring-2 focus:ring-teal-400 outline-none text-gray-800 shadow">
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse" id="bedsTable">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">#</th>
+                    <th class="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Room & Bed No.</th>
+                    <th class="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Bed Category</th>
+                    <th class="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Daily Fee (₹)</th>
+                    <th class="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                    <th class="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Allocated Patient</th>
+                    <th class="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Allocated Date</th>
+                    <th class="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+
+                <tr th:if="${#lists.isEmpty(beds)}">
+                    <td colspan="8" class="text-center py-16 text-gray-400 font-medium">
+                        <i class="fas fa-procedures text-5xl text-gray-300 mb-3 block"></i>
+                        No beds added yet. Use the form above to add hospital beds.
+                    </td>
+                </tr>
+
+                <tr th:each="bed, iterStat : ${beds}" class="bed-row hover:bg-gray-50 transition">
+                    <td class="px-5 py-4 text-sm text-gray-400 font-medium" th:text="${iterStat.count}">1</td>
+
+                    <td class="px-5 py-4">
+                        <div class="font-bold text-gray-900 text-sm" th:text="${bed.bedNo}">BED-01</div>
+                        <div class="text-xs text-gray-500" th:text="${bed.roomNo}">Room-101</div>
+                    </td>
+
+                    <td class="px-5 py-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold"
+                              th:classappend="${bed.bedType == 'ICU'} ? 'bg-red-100 text-red-800 border border-red-300' :
+                                             (${bed.bedType == 'EMERGENCY'} ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-blue-100 text-blue-800 border border-blue-300')"
+                              th:text="${bed.bedType}">GENERAL</span>
+                    </td>
+
+                    <td class="px-5 py-4 font-extrabold text-emerald-700 text-sm"
+                        th:text="${bed.dailyFee != null ? '₹' + bed.dailyFee : '₹0.00'}">₹2,500.00</td>
+
+                    <td class="px-5 py-4">
+                        <span th:if="${bed.status == 'AVAILABLE'}" class="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-300">
+                            🟢 AVAILABLE
+                        </span>
+                        <span th:unless="${bed.status == 'AVAILABLE'}" class="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-300">
+                            🔴 OCCUPIED
+                        </span>
+                    </td>
+
+                    <td class="px-5 py-4">
+                        <div th:if="${bed.patient != null}" class="patient-name-cell">
+                            <p class="text-sm font-bold text-gray-800" th:text="${bed.patient.name}">Patient Name</p>
+                            <p class="text-xs text-gray-500" th:text="${bed.patient.patientId}">PAT-0001</p>
+                        </div>
+                        <div th:unless="${bed.patient != null}" class="text-xs text-gray-400 italic">
+                            Unassigned
+                        </div>
+                    </td>
+
+                    <td class="px-5 py-4 text-xs text-gray-600"
+                        th:text="${bed.allocatedDate != null ? #temporals.format(bed.allocatedDate, 'dd MMM yyyy, hh:mm a') : '-'}">-</td>
+
+                    <td class="px-5 py-4">
+                        <!-- If Available: Allocate Form -->
+                        <form th:if="${bed.status == 'AVAILABLE'}" th:action="@{'/admin/beds/' + ${bed.id} + '/allocate'}" method="post" class="flex items-center gap-2">
+                            <select name="patientId" required class="text-xs px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-teal-500 bg-white">
+                                <option value="">-- Select Patient --</option>
+                                <option th:each="p : ${patients}" th:value="${p.id}" th:text="${p.name} + ' (' + ${p.patientId} + ')'">John Doe</option>
+                            </select>
+                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shadow flex items-center gap-1">
+                                <i class="fas fa-check"></i> Assign
+                            </button>
+                        </form>
+
+                        <!-- If Occupied: Release Form -->
+                        <form th:unless="${bed.status == 'AVAILABLE'}" th:action="@{'/admin/beds/' + ${bed.id} + '/release'}" method="post" class="inline">
+                            <button type="submit" onclick="return confirm('Discharge patient and release this bed?')"
+                                    class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shadow flex items-center gap-1">
+                                <i class="fas fa-walking"></i> Discharge & Release
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterBedTable() {
+        const input = document.getElementById('bedSearchInput');
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById('bedsTable');
+        const rows = table.getElementsByClassName('bed-row');
+
+        for (let i = 0; i < rows.length; i++) {
+            const rowText = rows[i].innerText.toLowerCase();
+            if (rowText.includes(filter)) {
+                rows[i].style.display = '';
+            } else {
+                rows[i].style.display = 'none';
+            }
+        }
+    }
+</script>
+</body>
+</html>

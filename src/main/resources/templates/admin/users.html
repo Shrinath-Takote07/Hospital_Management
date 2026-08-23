@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Users - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<nav class="bg-rose-600 text-white p-6">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <h1 class="text-3xl font-bold">User Management</h1>
+        <div class="flex items-center gap-6 text-sm font-semibold">
+            <a href="/admin/beds" class="hover:underline flex items-center gap-1"><i class="fas fa-bed"></i> Bed Allocations</a>
+            <a href="/admin/appointments" class="hover:underline">Appointments</a>
+            <a href="/admin/dashboard" class="hover:underline">← Back to Dashboard</a>
+        </div>
+    </div>
+</nav>
+
+<div class="max-w-6xl mx-auto p-8">
+    <div th:if="${msg}" class="bg-green-100 text-green-700 p-4 rounded mb-6" th:text="${msg}"></div>
+
+    <!-- Search Bar -->
+    <div class="mb-4 flex justify-end">
+        <div class="relative w-full sm:w-80">
+            <input type="text" id="userSearchInput" onkeyup="filterUserTable()" placeholder="🔍 Search user by name, email, or role..."
+                   class="w-full px-4 py-2 text-xs border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none shadow-sm">
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-xl overflow-hidden">
+        <table class="w-full" id="usersTable">
+            <thead class="bg-rose-600 text-white">
+            <tr>
+                <th class="p-4 text-left">Name</th>
+                <th class="p-4 text-left">Email</th>
+                <th class="p-4 text-left">Role</th>
+                <th class="p-4 text-left">Doctor Fee (₹) & Status</th>
+                <th class="p-4 text-left">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="user : ${users}" class="user-row border-b hover:bg-gray-50">
+                <td class="p-4">
+                    <div class="font-bold text-gray-800" th:text="${user.name}"></div>
+                    <div class="text-xs text-gray-500" th:if="${user.specialization}" th:text="${user.specialization}"></div>
+                </td>
+                <td class="p-4" th:text="${user.email}"></td>
+                <td class="p-4">
+                    <form th:action="@{'/admin/users/' + ${user.id} + '/role'}" method="post" class="inline">
+                        <select name="role" onchange="this.form.submit()" class="p-2 rounded border bg-white text-gray-800 font-semibold focus:ring-2 focus:ring-rose-500">
+                            <option th:selected="${user.role != null && user.role.name() == 'ADMIN'}" value="ADMIN">ADMIN</option>
+                            <option th:selected="${user.role != null && user.role.name() == 'DOCTOR'}" value="DOCTOR">DOCTOR</option>
+                            <option th:selected="${user.role != null && user.role.name() == 'PATIENT'}" value="PATIENT">PATIENT</option>
+                        </select>
+                    </form>
+                </td>
+                <td class="p-4">
+                    <div th:if="${user.role != null && user.role.name() == 'DOCTOR'}">
+                        <form th:action="@{'/admin/doctors/' + ${user.id} + '/update-status-fee'}" method="post" class="flex items-center space-x-2">
+                            <div class="relative">
+                                <span class="absolute left-2 top-2 text-gray-500 font-bold">₹</span>
+                                <input type="number" step="10" name="fees" th:value="${user.fees != null ? user.fees : 500}" class="pl-6 pr-2 py-1.5 w-24 border rounded text-sm font-medium" placeholder="Fee ₹" required />
+                            </div>
+                            <select name="availableStatus" class="p-1.5 border rounded text-xs font-semibold text-gray-700">
+                                <option th:selected="${user.availableStatus == 'AVAILABLE' || user.availableStatus == null}" value="AVAILABLE">🟢 Available</option>
+                                <option th:selected="${user.availableStatus == 'UNAVAILABLE'}" value="UNAVAILABLE">🔴 Unavailable</option>
+                                <option th:selected="${user.availableStatus == 'ON_LEAVE'}" value="ON_LEAVE">🟡 On Leave</option>
+                            </select>
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded font-medium shadow">Save</button>
+                        </form>
+                    </div>
+                    <div th:unless="${user.role != null && user.role.name() == 'DOCTOR'}" class="text-xs text-gray-400 italic">N/A</div>
+                </td>
+                <td class="p-4">
+                    <div class="flex items-center gap-2">
+                        <button th:if="${user.patient != null}" type="button"
+                                onclick="openAdminSecurityIdModal(this)"
+                                th:data-patient-id="${user.patient?.patientId}"
+                                th:data-patient-name="${user.patient?.name}"
+                                th:data-patient-email="${user.patient?.email}"
+                                th:data-patient-phone="${user.patient?.phone}"
+                                th:data-patient-gender="${user.patient?.gender}"
+                                th:data-patient-dob="${user.patient?.dob}"
+                                th:data-patient-address="${user.patient?.permanentAddress}"
+                                th:data-id-type="${user.patient?.govtIdType}"
+                                th:data-id-number="${user.patient?.govtIdNumber}"
+                                th:data-id-proof="${user.patient?.govtIdProofPath}"
+                                th:data-photo-proof="${user.patient?.photoPath}"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow"
+                                title="View Security ID & Proof">
+                            🪪 View ID Proof
+                        </button>
+                        <form th:action="@{'/admin/users/' + ${user.id} + '/delete'}" method="post" class="inline">
+                            <button type="submit" onclick="return confirm('Delete this user?')"
+                                    class="bg-red-600 text-white px-3 py-1.5 rounded text-sm hover:bg-red-700 font-semibold shadow">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Security ID & Patient Proof Modal for Admin -->
+<div id="adminSecurityIdModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-200">
+        <div class="bg-gradient-to-r from-purple-700 via-indigo-800 to-slate-900 p-5 text-white flex justify-between items-center">
+            <h3 class="font-bold text-base flex items-center gap-2">
+                🛡️ Patient Security Identity & ID Verification
+            </h3>
+            <button onclick="closeAdminSecurityIdModal()" class="text-white/80 hover:text-white text-xl font-bold">&times;</button>
+        </div>
+
+        <div class="p-6 space-y-4 text-xs text-gray-800">
+            <div class="flex items-center gap-4 bg-slate-50 p-3.5 rounded-2xl border">
+                <img id="adminModalPhotoProof" src="" alt="Patient Photo" class="w-16 h-16 rounded-full object-cover border-2 border-indigo-600 shadow">
+                <div>
+                    <h4 id="adminModalPatientName" class="font-bold text-sm text-gray-900">Patient Name</h4>
+                    <p class="text-indigo-600 font-semibold" id="adminModalPatientId">PAT-0001</p>
+                    <p class="text-gray-500" id="adminModalPatientMeta">Male | 25 Yrs</p>
+                </div>
+            </div>
+
+            <div class="space-y-1.5 bg-slate-50 p-3.5 rounded-2xl border">
+                <p>📞 <strong>Phone / Contact:</strong> <span id="adminModalPatientPhone" class="font-bold text-gray-900">N/A</span></p>
+                <p>✉️ <strong>Email:</strong> <span id="adminModalPatientEmail">N/A</span></p>
+                <p>🏠 <strong>Permanent Address:</strong> <span id="adminModalPatientAddress" class="font-medium text-slate-800">N/A</span></p>
+                <p>📜 <strong>Govt ID Type:</strong> <span id="adminModalGovtIdType" class="font-bold text-purple-700">Aadhaar Card</span></p>
+                <p>🔢 <strong>Govt ID Number:</strong> <span id="adminModalGovtIdNumber" class="font-mono font-bold text-indigo-900">XXXX-XXXX-1234</span></p>
+            </div>
+
+            <div>
+                <label class="block font-bold text-gray-700 mb-1">Uploaded Govt ID Proof Document:</label>
+                <div class="bg-gray-100 border rounded-2xl p-3 text-center">
+                    <img id="adminModalGovtIdProof" src="" alt="Govt ID Proof" class="max-h-48 mx-auto rounded-xl object-contain shadow">
+                    <div class="mt-3 flex items-center justify-center gap-2 flex-wrap">
+                        <a id="adminModalGovtIdProofLink" href="#" target="_blank" class="inline-block text-indigo-600 hover:underline font-bold text-xs bg-white px-3 py-1.5 rounded-lg border shadow-sm">
+                            🔍 View Full ID Document
+                        </a>
+                        <a id="adminModalGovtIdDownloadLink" href="#" download class="inline-block bg-purple-700 hover:bg-purple-800 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow">
+                            ⬇️ Download ID Proof File
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="closeAdminSecurityIdModal()" class="w-full py-2.5 bg-slate-900 hover:bg-black text-white font-bold rounded-xl text-xs shadow">
+                Close Verification Modal
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openAdminSecurityIdModal(btn) {
+        document.getElementById('adminModalPatientName').innerText = btn.getAttribute('data-patient-name') || 'N/A';
+        document.getElementById('adminModalPatientId').innerText = 'ID: ' + (btn.getAttribute('data-patient-id') || 'PAT-0000');
+        document.getElementById('adminModalPatientMeta').innerText = (btn.getAttribute('data-patient-gender') || 'N/A') + ' | DOB: ' + (btn.getAttribute('data-patient-dob') || 'N/A');
+        document.getElementById('adminModalPatientPhone').innerText = btn.getAttribute('data-patient-phone') || 'N/A';
+        document.getElementById('adminModalPatientEmail').innerText = btn.getAttribute('data-patient-email') || 'N/A';
+        document.getElementById('adminModalPatientAddress').innerText = btn.getAttribute('data-patient-address') || 'Not Provided';
+        document.getElementById('adminModalGovtIdType').innerText = btn.getAttribute('data-id-type') || 'Govt ID Proof';
+        document.getElementById('adminModalGovtIdNumber').innerText = btn.getAttribute('data-id-number') || 'Not Provided';
+
+        const idProof = btn.getAttribute('data-id-proof');
+        const photoProof = btn.getAttribute('data-photo-proof');
+
+        const proofImg = document.getElementById('adminModalGovtIdProof');
+        const proofLink = document.getElementById('adminModalGovtIdProofLink');
+        const downloadLink = document.getElementById('adminModalGovtIdDownloadLink');
+        const photoImg = document.getElementById('adminModalPhotoProof');
+
+        if (idProof && idProof.trim() !== '') {
+            proofImg.src = idProof;
+            proofLink.href = idProof;
+            downloadLink.href = idProof;
+            proofImg.classList.remove('hidden');
+            proofLink.classList.remove('hidden');
+            downloadLink.classList.remove('hidden');
+        } else {
+            proofImg.src = 'https://via.placeholder.com/400x200?text=No+Govt+ID+Uploaded';
+            proofLink.classList.add('hidden');
+            downloadLink.classList.add('hidden');
+        }
+
+        if (photoProof && photoProof.trim() !== '') {
+            photoImg.src = photoProof;
+        } else {
+            photoImg.src = 'https://via.placeholder.com/150?text=Photo';
+        }
+
+        document.getElementById('adminSecurityIdModal').classList.remove('hidden');
+    }
+
+    function closeAdminSecurityIdModal() {
+        document.getElementById('adminSecurityIdModal').classList.add('hidden');
+    }
+
+    function filterUserTable() {
+        const input = document.getElementById('userSearchInput');
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById('usersTable');
+        const rows = table.getElementsByClassName('user-row');
+
+        for (let i = 0; i < rows.length; i++) {
+            const rowText = rows[i].innerText.toLowerCase();
+            if (rowText.includes(filter)) {
+                rows[i].style.display = '';
+            } else {
+                rows[i].style.display = 'none';
+            }
+        }
+    }
+</script>
+</body>
+</html>

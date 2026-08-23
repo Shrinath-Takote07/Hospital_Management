@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<nav class="bg-white shadow">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-teal-700">Doctor Portal</h1>
+            <p class="text-sm text-gray-600 flex items-center gap-2">
+                <span th:text="'Dr. ' + ${doctor.name}">Dr. Sarah</span>
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800" th:text="${doctor.specialization}">Cardiologist</span>
+                <span class="text-xs font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200"
+                      th:text="${doctor.fees != null ? 'Fee: ₹' + #numbers.formatDecimal(doctor.fees, 1, 2) : 'Fee: ₹500.00'}">Fee: ₹500.00</span>
+            </p>
+        </div>
+        <div class="flex items-center gap-4">
+            <!-- Doctor Availability Status Toggle -->
+            <form th:action="@{/doctor/status}" method="post" class="flex items-center gap-2 bg-gray-100 p-1.5 rounded-xl border border-gray-200">
+                <span class="text-xs font-bold text-gray-600 pl-2">Status:</span>
+                <select name="availableStatus" onchange="this.form.submit()" class="text-xs font-bold py-1 px-2.5 rounded-lg border-0 bg-white shadow-sm text-gray-800 focus:ring-2 focus:ring-teal-500">
+                    <option th:selected="${doctor.availableStatus == 'AVAILABLE' || doctor.availableStatus == null}" value="AVAILABLE">🟢 Available</option>
+                    <option th:selected="${doctor.availableStatus == 'UNAVAILABLE'}" value="UNAVAILABLE">🔴 Unavailable</option>
+                    <option th:selected="${doctor.availableStatus == 'ON_LEAVE'}" value="ON_LEAVE">🟡 On Leave</option>
+                </select>
+            </form>
+            <form th:action="@{/logout}" method="post" class="inline">
+                <button class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-1.5 rounded-xl text-sm font-semibold transition">
+                    Logout
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div th:if="${msg}" class="mb-6 p-4 bg-green-100 border border-green-300 text-green-800 rounded-xl text-sm font-semibold flex items-center gap-2">
+        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        [[${msg}]]
+    </div>
+
+    <!-- Today's Completed Appointments Section -->
+    <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-6 mb-8 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center font-bold shadow-md">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">Today's Completed Appointments</h2>
+                    <p class="text-xs text-gray-600">Patients you have successfully treated and completed today</p>
+                </div>
+            </div>
+            <span class="bg-emerald-600 text-white text-xs font-extrabold px-3 py-1.5 rounded-full shadow"
+                  th:text="${totalTodayCompleted != null ? totalTodayCompleted : 0} + ' Completed Today'">0 Completed Today</span>
+        </div>
+
+        <div th:if="${#lists.isEmpty(todaysCompletedAppointments)}" class="bg-white/80 rounded-xl p-6 text-center text-gray-500 text-sm border border-emerald-100">
+            No completed appointments yet for today. Mark an appointment as <strong>Completed</strong> after meeting your patient.
+        </div>
+
+        <div th:unless="${#lists.isEmpty(todaysCompletedAppointments)}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div th:each="apt : ${todaysCompletedAppointments}" class="bg-white p-4 rounded-xl border border-emerald-200 shadow-sm hover:shadow-md transition">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-base" th:text="${apt.patient != null ? apt.patient.name : 'Patient'}">Patient Name</h4>
+                        <p class="text-xs text-gray-500" th:text="${apt.patient != null ? 'ID: ' + apt.patient.patientId : ''}">PAT-0001</p>
+                    </div>
+                    <span class="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase border border-emerald-300">✓ COMPLETED</span>
+                </div>
+                <div class="text-xs text-gray-600 space-y-1 bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100">
+                    <p>🕒 <strong class="text-gray-800">Time:</strong> <span th:text="${#temporals.format(apt.startTime, 'hh:mm a')}">10:30 AM</span></p>
+                    <p>📌 <strong class="text-gray-800">Type:</strong> <span th:text="${apt.appointmentType}">REGULAR</span></p>
+                    <p th:if="${apt.patientMessage != null}">💬 <strong class="text-gray-800">Note:</strong> <span class="italic" th:text="${apt.patientMessage}">-</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="text-lg font-semibold mb-4 flex items-center justify-between">
+                <span>Patient Appointments & Messages</span>
+                <span class="text-xs bg-teal-100 text-teal-800 font-bold px-2.5 py-1 rounded-full" th:text="${#lists.size(allAppointments)}">0</span>
+            </h3>
+
+            <div th:if="${#lists.isEmpty(allAppointments)}" class="text-center py-8 text-gray-500 text-sm">
+                No appointments scheduled yet.
+            </div>
+
+            <div th:each="apt : ${allAppointments}" class="mb-4 p-4 bg-teal-50/50 border border-teal-100 rounded-xl space-y-2">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <p class="font-bold text-gray-900 text-base" th:text="${apt.patient != null ? apt.patient.name : 'Unknown Patient'}">John Doe</p>
+                            <span th:if="${apt.appointmentType != null}"
+                                  th:class="${apt.appointmentType == 'URGENT'} ? 'bg-red-100 text-red-800 border border-red-200 px-2 py-0.5 rounded text-[10px] font-bold uppercase' : 'bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase'"
+                                  th:text="${apt.appointmentType}">REGULAR</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-0.5" th:text="${apt.title != null ? apt.title : 'Checkup'}">Checkup</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-bold text-teal-700" th:text="${#temporals.format(apt.startTime, 'hh:mm a')}">10:30 AM</p>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold"
+                              th:classappend="${apt.status == 'CONFIRMED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : (apt.status == 'SCHEDULED' ? 'bg-yellow-100 text-yellow-800' : (apt.status == 'COMPLETED' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'))}"
+                              th:text="${apt.status}">SCHEDULED</span>
+                    </div>
+                </div>
+
+                <!-- Patient Problem / Message Note -->
+                <div th:if="${apt.patientMessage != null && !#strings.isEmpty(apt.patientMessage)}" class="p-2.5 bg-white border border-amber-200 rounded-lg text-xs text-gray-700">
+                    <strong class="text-amber-800 font-semibold">💬 Patient Problem / Note:</strong>
+                    <p class="mt-1 italic text-gray-600" th:text="${apt.patientMessage}">Patient note...</p>
+                </div>
+
+                <!-- Patient Profile Details -->
+                <div th:if="${apt.patient != null}" class="grid grid-cols-2 gap-2 pt-2 text-xs border-t border-teal-100 text-gray-600">
+                    <p>🆔 <strong class="text-gray-800">ID:</strong> <span th:text="${apt.patient.patientId}">PAT-0001</span></p>
+                    <p>📞 <strong class="text-gray-800">Phone:</strong> <span th:text="${apt.patient.phone != null ? apt.patient.phone : 'N/A'}">9876543210</span></p>
+                    <p>👤 <strong class="text-gray-800">Gender:</strong> <span th:text="${apt.patient.gender != null ? apt.patient.gender : 'N/A'}">Male</span></p>
+                    <p>🎂 <strong class="text-gray-800">DOB:</strong> <span th:text="${apt.patient.dob != null ? #temporals.format(apt.patient.dob, 'dd MMM yyyy') : 'N/A'}">15 May 1995</span></p>
+                </div>
+
+                <!-- Doctor Actions & Security ID View -->
+                <div class="flex flex-wrap gap-2 pt-2 justify-between items-center border-t border-teal-100">
+                    <button type="button"
+                            onclick="openSecurityIdModal(this)"
+                            th:data-patient-id="${apt.patient?.patientId}"
+                            th:data-patient-name="${apt.patient?.name}"
+                            th:data-patient-email="${apt.patient?.email}"
+                            th:data-patient-phone="${apt.patient?.phone}"
+                            th:data-patient-gender="${apt.patient?.gender}"
+                            th:data-patient-dob="${apt.patient?.dob}"
+                            th:data-patient-address="${apt.patient?.permanentAddress}"
+                            th:data-id-type="${apt.patient?.govtIdType}"
+                            th:data-id-number="${apt.patient?.govtIdNumber}"
+                            th:data-id-proof="${apt.patient?.govtIdProofPath}"
+                            th:data-photo-proof="${apt.patient?.photoPath}"
+                            class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shadow flex items-center gap-1">
+                        🪪 View Security ID & Proof
+                    </button>
+
+                    <div class="flex gap-2">
+                        <form th:action="@{'/doctor/appointments/' + ${apt.id} + '/status'}" method="post" class="inline">
+                            <input type="hidden" name="status" value="CONFIRMED" />
+                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                                ✓ Confirm
+                            </button>
+                        </form>
+                        <form th:action="@{'/doctor/appointments/' + ${apt.id} + '/status'}" method="post" class="inline">
+                            <input type="hidden" name="status" value="COMPLETED" />
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                                ✓ Complete
+                            </button>
+                        </form>
+                        <form th:action="@{'/doctor/appointments/' + ${apt.id} + '/status'}" method="post" class="inline">
+                            <input type="hidden" name="status" value="CANCELLED" />
+                            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                                ✕ Cancel
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">My Schedule Calendar</h3>
+            <div id="calendar"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Security ID & Patient Proof Modal -->
+<div id="securityIdModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-200">
+        <div class="bg-gradient-to-r from-purple-700 to-indigo-800 p-5 text-white flex justify-between items-center">
+            <h3 class="font-bold text-base flex items-center gap-2">
+                🛡️ Patient Security Identity & ID Proof
+            </h3>
+            <button onclick="closeSecurityIdModal()" class="text-white/80 hover:text-white text-xl font-bold">&times;</button>
+        </div>
+
+        <div class="p-6 space-y-4 text-xs text-gray-800">
+            <div class="flex items-center gap-4 bg-slate-50 p-3 rounded-2xl border">
+                <img id="modalPhotoProof" src="" alt="Patient Photo" class="w-16 h-16 rounded-full object-cover border-2 border-indigo-600 shadow">
+                <div>
+                    <h4 id="modalPatientName" class="font-bold text-sm text-gray-900">Patient Name</h4>
+                    <p class="text-indigo-600 font-semibold" id="modalPatientId">PAT-0001</p>
+                    <p class="text-gray-500" id="modalPatientMeta">Male | 25 Yrs</p>
+                </div>
+            </div>
+
+            <div class="space-y-1.5 bg-slate-50 p-3 rounded-2xl border">
+                <p>📞 <strong>Phone / Contact:</strong> <span id="modalPatientPhone" class="font-bold text-gray-900">N/A</span></p>
+                <p>✉️ <strong>Email:</strong> <span id="modalPatientEmail">N/A</span></p>
+                <p>🏠 <strong>Permanent Address:</strong> <span id="modalPatientAddress" class="font-medium text-slate-800">N/A</span></p>
+                <p>📜 <strong>Govt ID Type:</strong> <span id="modalGovtIdType" class="font-bold text-purple-700">Aadhaar Card</span></p>
+                <p>🔢 <strong>Govt ID Number:</strong> <span id="modalGovtIdNumber" class="font-mono font-bold text-indigo-900">XXXX-XXXX-1234</span></p>
+            </div>
+
+            <div>
+                <label class="block font-bold text-gray-700 mb-1">Uploaded Govt ID Proof Document:</label>
+                <div class="bg-gray-100 border rounded-2xl p-3 text-center">
+                    <img id="modalGovtIdProof" src="" alt="Govt ID Proof" class="max-h-48 mx-auto rounded-xl object-contain shadow">
+                    <div class="mt-3 flex items-center justify-center gap-2 flex-wrap">
+                        <a id="modalGovtIdProofLink" href="#" target="_blank" class="inline-block text-indigo-600 hover:underline font-bold text-xs bg-white px-3 py-1.5 rounded-lg border shadow-sm">
+                            🔍 View Full ID Document
+                        </a>
+                        <a id="modalGovtIdDownloadLink" href="#" download class="inline-block bg-purple-700 hover:bg-purple-800 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow">
+                            ⬇️ Download ID Proof File
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="closeSecurityIdModal()" class="w-full py-2.5 bg-gray-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs shadow">
+                Close Verification Modal
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+<script>
+    function openSecurityIdModal(btn) {
+        document.getElementById('modalPatientName').innerText = btn.getAttribute('data-patient-name') || 'N/A';
+        document.getElementById('modalPatientId').innerText = 'ID: ' + (btn.getAttribute('data-patient-id') || 'PAT-0000');
+        document.getElementById('modalPatientMeta').innerText = (btn.getAttribute('data-patient-gender') || 'N/A') + ' | DOB: ' + (btn.getAttribute('data-patient-dob') || 'N/A');
+        document.getElementById('modalPatientPhone').innerText = btn.getAttribute('data-patient-phone') || 'N/A';
+        document.getElementById('modalPatientEmail').innerText = btn.getAttribute('data-patient-email') || 'N/A';
+        document.getElementById('modalPatientAddress').innerText = btn.getAttribute('data-patient-address') || 'Not Provided';
+        document.getElementById('modalGovtIdType').innerText = btn.getAttribute('data-id-type') || 'Govt ID Proof';
+        document.getElementById('modalGovtIdNumber').innerText = btn.getAttribute('data-id-number') || 'Not Provided';
+
+        const idProof = btn.getAttribute('data-id-proof');
+        const photoProof = btn.getAttribute('data-photo-proof');
+
+        const proofImg = document.getElementById('modalGovtIdProof');
+        const proofLink = document.getElementById('modalGovtIdProofLink');
+        const downloadLink = document.getElementById('modalGovtIdDownloadLink');
+        const photoImg = document.getElementById('modalPhotoProof');
+
+        if (idProof && idProof.trim() !== '') {
+            proofImg.src = idProof;
+            proofLink.href = idProof;
+            downloadLink.href = idProof;
+            proofImg.classList.remove('hidden');
+            proofLink.classList.remove('hidden');
+            downloadLink.classList.remove('hidden');
+        } else {
+            proofImg.src = 'https://via.placeholder.com/400x200?text=No+Govt+ID+Uploaded';
+            proofLink.classList.add('hidden');
+            downloadLink.classList.add('hidden');
+        }
+
+        if (photoProof && photoProof.trim() !== '') {
+            photoImg.src = photoProof;
+        } else {
+            photoImg.src = 'https://via.placeholder.com/150?text=Photo';
+        }
+
+        document.getElementById('securityIdModal').classList.remove('hidden');
+    }
+
+    function closeSecurityIdModal() {
+        document.getElementById('securityIdModal').classList.add('hidden');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var calendarEl = document.getElementById('calendar');
+      if (calendarEl) {
+          new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek',
+            events: '/appointment/doctor/events',
+            height: 'auto'
+          }).render();
+      }
+    });
+</script>
+</body>
+</html>

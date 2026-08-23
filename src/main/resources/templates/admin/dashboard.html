@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - HMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<!-- Navbar -->
+<nav class="bg-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <div class="flex items-center">
+                <h1 class="text-2xl font-bold text-indigo-700">HMS Admin Panel</h1>
+            </div>
+            <div class="flex items-center gap-6">
+                <a href="/admin/users" class="text-gray-700 hover:text-indigo-600 font-medium">Users</a>
+                <a href="/admin/appointments" class="text-gray-700 hover:text-indigo-600 font-medium">Appointments</a>
+                <a href="/admin/beds" class="text-teal-600 hover:text-teal-700 font-bold flex items-center gap-1"><i class="fas fa-bed"></i> Bed Allocations</a>
+                <a href="/admin/bills" class="text-purple-600 hover:text-purple-700 font-bold flex items-center gap-1"><i class="fas fa-file-invoice-dollar"></i> Hospital Bills</a>
+                <form th:action="@{/logout}" method="post" class="inline">
+                    <button class="text-red-600 hover:text-red-800 font-medium flex items-center gap-2">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
+        <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl shadow-xl p-6 transform hover:scale-105 transition">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm">Total Users</p>
+                    <p class="text-3xl font-bold mt-2" th:text="${totalUsers}">124</p>
+                </div>
+                <i class="fas fa-users text-4xl opacity-50"></i>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl shadow-xl p-6 transform hover:scale-105 transition">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-sm">Patients</p>
+                    <p class="text-3xl font-bold mt-2" th:text="${totalPatients}">98</p>
+                </div>
+                <i class="fas fa-user-injured text-4xl opacity-50"></i>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-2xl shadow-xl p-6 transform hover:scale-105 transition">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100 text-sm">Doctors</p>
+                    <p class="text-3xl font-bold mt-2" th:text="${totalDoctors}">12</p>
+                </div>
+                <i class="fas fa-stethoscope text-4xl opacity-50"></i>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-2xl shadow-xl p-6 transform hover:scale-105 transition">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-orange-100 text-sm">Appointments</p>
+                    <p class="text-3xl font-bold mt-2" th:text="${totalAppointments}">256</p>
+                </div>
+                <i class="fas fa-calendar-check text-4xl opacity-50"></i>
+            </div>
+        </div>
+
+        <a href="/admin/beds" class="bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-2xl shadow-xl p-6 transform hover:scale-105 transition block">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-teal-100 text-sm">Hospital Beds</p>
+                    <p class="text-3xl font-bold mt-2" th:text="${totalBeds}">10</p>
+                </div>
+                <i class="fas fa-procedures text-4xl opacity-50"></i>
+            </div>
+        </a>
+    </div>
+
+    <!-- Recent Appointments -->
+    <div class="bg-white rounded-2xl shadow-xl p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+            <i class="fas fa-clock text-indigo-600"></i> Recent Appointments
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-sm font-semibold text-gray-700">Patient</th>
+                    <th class="px-4 py-3 text-sm font-semibold text-gray-700">Doctor</th>
+                    <th class="px-4 py-3 text-sm font-semibold text-gray-700">Date & Time</th>
+                    <th class="px-4 py-3 text-sm font-semibold text-gray-700">Status</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                <tr th:each="apt : ${recentAppointments}" class="hover:bg-gray-50 transition">
+                    <td class="px-4 py-4 text-sm" th:text="${apt.patient != null ? apt.patient.name : 'N/A'}">John Doe</td>
+                    <td class="px-4 py-4 text-sm" th:text="${apt.doctor != null ? 'Dr. ' + apt.doctor.name : 'N/A'}">Dr. Sarah</td>
+                    <td class="px-4 py-4 text-sm" th:text="${#temporals.format(apt.startTime, 'dd MMM yyyy, hh:mm a')}">15 Apr 2025, 10:30 AM</td>
+                    <td class="px-4 py-4">
+                <span class="px-3 py-1 rounded-full text-xs font-medium"
+                      th:class="${apt.status == 'SCHEDULED'} ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'"
+                      th:text="${apt.status}">SCHEDULED</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <a href="/admin/users" class="bg-indigo-600 text-white rounded-xl shadow-lg p-6 text-center hover:bg-indigo-700 transition">
+            <i class="fas fa-users text-3xl mb-3"></i>
+            <h3 class="text-lg font-bold">Manage Users</h3>
+            <p class="text-sm opacity-90">Add, edit or remove users</p>
+        </a>
+        <a href="/admin/appointments" class="bg-teal-600 text-white rounded-xl shadow-lg p-6 text-center hover:bg-teal-700 transition">
+            <i class="fas fa-calendar-alt text-3xl mb-3"></i>
+            <h3 class="text-lg font-bold">All Appointments</h3>
+            <p class="text-sm opacity-90">View & manage bookings</p>
+        </a>
+        <div class="bg-gray-800 text-white rounded-xl shadow-lg p-6 text-center">
+            <i class="fas fa-chart-bar text-3xl mb-3"></i>
+            <h3 class="text-lg font-bold">Analytics</h3>
+            <p class="text-sm opacity-90">Coming soon</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>
