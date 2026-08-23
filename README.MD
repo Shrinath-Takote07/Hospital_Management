@@ -1,6 +1,6 @@
 
 
-# Hospital Management System (HMS)
+# Hospital Management System 
 **A Production-Ready, Full-Stack Hospital Management System Built with Modern Java Technologies**
 
 ---
