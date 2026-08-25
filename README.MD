@@ -203,10 +203,10 @@ To explore the system's capabilities, use these pre-configured accounts:
 
 ## 📞 Connect With Me
 
-**Rajeev Nayan**  
+****  
 Full-Stack Java Developer | Spring Boot Expert | Clean Code Enthusiast
 
-📧 Email: shrinathtakote163@gmail.com 
+📧 Email: s
 💼 LinkedIn: https://www.linkedin.com/in/shrinath-takote-322664318/  
 🐙 GitHub: https://github.com/Shrinath-Takote07
 
